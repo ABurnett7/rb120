@@ -1,9 +1,13 @@
 require "pry"
 
-class Board 
+class Board
+  WINNING_LINES = [[1, 2, 3], [4, 5, 6], [7, 8, 9]] + # rows
+                  [[1, 4, 7], [2, 5, 8], [3, 6, 9]] + # cols
+                  [[1, 5, 9], [3, 5, 7]]              # diagonals
+
   def initialize
     @squares = {}
-    (1..9).each {|key| @squares[key] = Square.new}
+    reset
   end
   
   def get_square_at(key)
@@ -20,6 +24,34 @@ class Board
 
   def full?
     unmarked_keys.empty?
+  end
+
+  def someone_won?
+    !!detect_winner
+  end
+
+  def count_human_marker(squares)
+    squares.collect(&:marker).count(TTTGame::HUMAN_MARKER)
+  end
+
+  def count_computer_marker(squares)
+    squares.collect(&:marker).count(TTTGame::COMPUTER_MARKER)
+  end
+
+  # returns the winning marker or nil
+  def detect_winner
+    WINNING_LINES.each do |line|
+      if count_human_marker(@squares.values_at(*line)) == 3
+        return TTTGame::HUMAN_MARKER
+      elsif count_computer_marker(@squares.values_at(*line)) == 3
+        return TTTGame::COMPUTER_MARKER
+      end
+    end
+    nil
+  end
+
+  def reset
+    (1..9).each {|key| @squares[key] = Square.new}
   end
 end
 
@@ -68,8 +100,8 @@ class TTTGame
     puts "Thanks for playing Tic Tac Toe! Goodbye!"
   end
   
-  def display_board
-    system 'clear'
+  def display_board(clear = true)
+    system 'clear' if clear
     puts "You're #{human.marker}. \nComputer is #{computer.marker}"
     
     puts ""
@@ -105,28 +137,55 @@ class TTTGame
 
   def display_result
     display_board
-    puts "The board is full."
+
+    case board.detect_winner
+    when human.marker
+      puts "You won!"
+    when computer.marker
+      puts "Computer won!"
+    else
+      puts "It's a tie!"
+    end
+  end
+
+  def play_again?
+    answer = nil
+    loop do
+      puts "Would you like to play again? (y/n)"
+      answer = gets.chomp.downcase
+      break if %w(y n).include? answer
+      puts "Sorry, must be y or n"
+    end
+
+    answer.start_with?('y')
   end
   
   def play
+    system 'clear'
     display_welcome_message
-    display_board
 
     loop do
-      human_moves
-      break if board.full?
-      # break if someone_won? || board_full?
+      display_board(false)
 
-      computer_moves
-      break if board.full?
-      # break if someone_won? || board_full?
+      loop do
+        human_moves
+        break if board.someone_won? || board.full?
 
-      display_board
+        computer_moves
+        break if board.someone_won? || board.full?
+
+        display_board
+      end
+      display_result
+      break unless play_again?
+      board.reset
+      system 'clear'
+      puts "Let's play again!"
+      puts ""
     end
-    display_result
     
     display_goodbye_message
-  end
+  end 
 end
 
 game = TTTGame.new

@@ -20,7 +20,8 @@ Besides any methods needed to determine the lowest and highest cards, create a #
 # My answer, not happy with needing the == method override though...but it works... 
 
 class Card
-  attr_reader :rank, :suit, :value
+  include Comparable
+  attr_reader :rank, :suit
   RANKS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 'Jack', 'Queen', 'King', 'Ace']
 
   def initialize(rank, suit)
@@ -34,10 +35,6 @@ class Card
   
   def <=>(other)
     RANKS.index(rank) <=> RANKS.index(other.rank)
-  end
-
-  def ==(other)
-    rank == other.rank && suit == other.suit
   end
 end
 
@@ -69,3 +66,29 @@ cards = [Card.new(8, 'Diamonds'),
          Card.new(8, 'Spades')]
 puts cards.min.rank == 8
 puts cards.max.rank == 8
+
+# Book answer:
+
+class Card
+  include Comparable
+  attr_reader :rank, :suit
+
+  VALUES = { 'Jack' => 11, 'Queen' => 12, 'King' => 13, 'Ace' => 14 }
+
+  def initialize(rank, suit)
+    @rank = rank
+    @suit = suit
+  end
+
+  def to_s
+    "#{rank} of #{suit}"
+  end
+
+  def value
+    VALUES.fetch(rank, rank)
+  end
+
+  def <=>(other_card)
+    value <=> other_card.value
+  end
+end
